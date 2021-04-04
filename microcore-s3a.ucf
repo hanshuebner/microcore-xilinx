@@ -1,0 +1,5 @@
+NET "clock" TNM_NET = clk;
+TIMESPEC TS_clk = PERIOD "clk" 62.5 ns HIGH 50%;
+CONFIG VCCAUX = "3.3";
+NET "clock" LOC = C10;
+NET "clock" IOSTANDARD = "LVCMOS33";

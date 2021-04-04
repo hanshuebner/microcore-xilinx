@@ -1,9 +1,7 @@
 -- ---------------------------------------------------------------------
--- @file : fpga.vhd for the Lattice XP2 Demoboard
+-- @file : fpga.vhd for the Spartan-3A Evaluation Kit
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 01.04.2021 22:43:32
--- Last check in: $Rev: 683 $ $Date:: 2021-04-01 #$
 -- @project: microCore
 -- @language : VHDL-2008
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
@@ -21,9 +19,6 @@
 --         This file should be edited for technology specific additions
 --         like e.g. pad assignments and it is the source of the uBus.
 --
--- Version Author   Date       Changes
---   210     ks    8-Jun-2020  initial version
---  2300     ks    8-Mar-2021  converted to NUMERIC_STD
 -- ---------------------------------------------------------------------
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
@@ -34,17 +29,8 @@ USE work.architecture_pkg.ALL;
 ENTITY fpga IS PORT (
    reset_n     : IN    STD_LOGIC;
    clock       : IN    STD_LOGIC; -- external clock input
--- Demoboard specific pins
-   int_n       : IN    STD_LOGIC; -- external interrupt input
-   io          : OUT   UNSIGNED(17 DOWNTO 0);
-   leds_n      : OUT   byte;
-   switch_n    : IN    UNSIGNED(3 DOWNTO 0);
--- external SRAM
-   ce_n        : OUT   STD_LOGIC;
-   oe_n        : OUT   STD_LOGIC;
-   we_n        : OUT   STD_LOGIC;
-   addr        : OUT   UNSIGNED(ram_addr_width-1 DOWNTO 0);
-   data        : INOUT UNSIGNED(ram_data_width-1 DOWNTO 0);
+   leds_n      : OUT   UNSIGNED(3 downto 0);
+   buttons_n   : in STD_LOGIC_VECTOR(2 downto 0);
 -- umbilical uart for debugging
    dsu_rxd     : IN    STD_LOGIC;  -- incoming asynchronous data stream
    dsu_txd     : OUT   STD_LOGIC   -- outgoing data stream
@@ -56,39 +42,29 @@ ATTRIBUTE IO_TYPE   : STRING;
 ATTRIBUTE DRIVE     : STRING;
 ATTRIBUTE SLEWRATE  : STRING;
 
-ATTRIBUTE LOC      OF reset_n     : SIGNAL IS "156";
+ATTRIBUTE LOC      OF reset_n     : SIGNAL IS "H4";
    ATTRIBUTE PULLMODE OF reset_n  : SIGNAL IS "UP";
    ATTRIBUTE IO_TYPE  OF reset_n  : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF clock       : SIGNAL IS "76";
+ATTRIBUTE LOC      OF clock       : SIGNAL IS "C10";
    ATTRIBUTE PULLMODE OF clock    : SIGNAL IS "NONE";
    ATTRIBUTE IO_TYPE  OF clock    : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF int_n       : SIGNAL IS "104";
-   ATTRIBUTE PULLMODE OF int_n    : SIGNAL IS "UP";
-   ATTRIBUTE IO_TYPE  OF int_n    : SIGNAL IS "LVCMOS33";
-
-ATTRIBUTE LOC      OF io          : SIGNAL IS "51, 46, 44, 42, 40, 36, 34, 32, 30, 52, 47, 45, 43, 41, 39, 35, 33, 31";
-   ATTRIBUTE PULLMODE OF io       : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF io       : SIGNAL IS "LVCMOS33";
-   ATTRIBUTE DRIVE    OF io       : SIGNAL IS "8";
-   ATTRIBUTE SLEWRATE OF io       : SIGNAL IS "SLOW";
-
-ATTRIBUTE LOC      OF leds_n      : SIGNAL IS "74, 73, 72, 69, 68, 67, 66, 65";
+ATTRIBUTE LOC      OF leds_n      : SIGNAL IS "D14, C16, C15, B15";
    ATTRIBUTE PULLMODE OF leds_n   : SIGNAL IS "NONE";
    ATTRIBUTE IO_TYPE  OF leds_n   : SIGNAL IS "LVCMOS33";
    ATTRIBUTE DRIVE    OF leds_n   : SIGNAL IS "12";
    ATTRIBUTE SLEWRATE OF leds_n   : SIGNAL IS "SLOW";
 
-ATTRIBUTE LOC      OF switch_n    : SIGNAL IS "148, 147, 146, 145";
-   ATTRIBUTE PULLMODE OF switch_n : SIGNAL IS "UP";
-   ATTRIBUTE IO_TYPE  OF switch_n : SIGNAL IS "LVCMOS33";
+ATTRIBUTE LOC      OF buttons_n    : SIGNAL IS "K3, H5, L3";
+   ATTRIBUTE PULLMODE OF buttons_n : SIGNAL IS "UP";
+   ATTRIBUTE IO_TYPE  OF buttons_n : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF dsu_rxd     : SIGNAL IS "55";
+ATTRIBUTE LOC      OF dsu_rxd     : SIGNAL IS "A3";
    ATTRIBUTE PULLMODE OF dsu_rxd  : SIGNAL IS "NONE";
    ATTRIBUTE IO_TYPE  OF dsu_rxd  : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF dsu_txd     : SIGNAL IS "56";
+ATTRIBUTE LOC      OF dsu_txd     : SIGNAL IS "B3";
    ATTRIBUTE PULLMODE OF dsu_txd  : SIGNAL IS "NONE";
    ATTRIBUTE IO_TYPE  OF dsu_txd  : SIGNAL IS "LVCMOS33";
    ATTRIBUTE DRIVE    OF dsu_txd  : SIGNAL IS "8";
@@ -139,23 +115,6 @@ SIGNAL dma_mem      : datamem_port;
 SIGNAL dma_rdata    : data_bus;
 SIGNAL cache_addr   : data_addr;    -- for simulation only
 
--- external memory
-COMPONENT external_SRAM GENERIC (
-   ram_addr_width : NATURAL;
-   ram_data_width : NATURAL;
-   delay_cnt      : NATURAL    -- delay_cnt+1 extra clock cycles for each memory access
-); PORT (
-   uBus        : IN    uBus_port;
-   ext_rdata   : OUT   data_bus;
-   delay       : OUT   STD_LOGIC;
--- external SRAM
-   ce_n        : OUT   STD_LOGIC;
-   oe_n        : OUT   STD_LOGIC;
-   we_n        : OUT   STD_LOGIC;
-   addr        : OUT   UNSIGNED(ram_addr_width-1 DOWNTO 0);
-   data        : INOUT UNSIGNED(ram_data_width-1 DOWNTO 0)
-); END COMPONENT external_SRAM;
-
 SIGNAL ext_rdata    : data_bus;
 SIGNAL SRAM_delay   : STD_LOGIC;
 
@@ -177,7 +136,6 @@ synch_reset: synchronize PORT MAP(clk, reset_a, reset_s);
 reset <= reset_a OR reset_s;
 
 synch_dsu_rxd:   synchronize   PORT MAP(clk, dsu_rxd, dsu_rxd_s);
-synch_interrupt: synchronize_n PORT MAP(clk, int_n,   flags(i_ext));
 
 -- ---------------------------------------------------------------------
 -- clk generation (perhaps a PLL will be used)
@@ -292,83 +250,6 @@ internal_data_mem: uDatacache PORT MAP (
    dma_rdata    => dma_rdata
 );
 
-mem_rdata_proc : PROCESS (uBus, dcache_rdata, ext_rdata)
-BEGIN
-   mem_rdata <= dcache_rdata;
-   IF  uBus.ext_en = '1' AND WITH_EXTMEM  THEN
-      mem_rdata <= ext_rdata;
-   END IF;
-END PROCESS mem_rdata_proc;
-
--- pragma translate_off
-memaddr_proc : PROCESS (clk)
-BEGIN
-   IF  rising_edge(clk)  THEN
-      IF  dcache_en = '1'  THEN
-         cache_addr <= memory.addr; -- state of the internal blockRAM address register for simulation
-      END IF;
-END IF;
-END PROCESS memaddr_proc;
--- pragma translate_on
--- ---------------------------------------------------------------------
--- external SRAM data memory
--- ---------------------------------------------------------------------
-
-with_external_mem: IF  WITH_EXTMEM  GENERATE
-
-   SRAM: external_SRAM
-   GENERIC MAP (ram_addr_width, ram_data_width, 1)
-   PORT MAP (
-      uBus        => uBus,
-      ext_rdata   => ext_rdata,
-      delay       => SRAM_delay,
-   -- external SRAM
-      ce_n        => ce_n,
-      oe_n        => oe_n,
-      we_n        => we_n,
-      addr        => addr,
-      data        => data
-);
-
-END GENERATE with_external_mem; no_external_mem: IF  NOT WITH_EXTMEM  GENERATE
-
-   ext_rdata  <= (OTHERS => '0');
-   SRAM_delay <= '0';
-
-   ce_n <= '1';
-   we_n <= '1';
-   oe_n <= '1';
-   addr <= (OTHERS => '0');
-   data <= (OTHERS => 'Z');
-
-END GENERATE no_external_mem;
-
--- ---------------------------------------------------------------------
--- XP2_8_protoboard specific IO
--- ---------------------------------------------------------------------
-
-io <= "000" & ioreg;
-
-ioreg_proc : PROCESS (clk)
-BEGIN
-   IF  reset = '1' AND ASYNC_RESET  THEN
-      ioreg <= (OTHERS => '0');
-   ELSIF  rising_edge(clk)  THEN
-      IF  uReg_write(uBus, IO_REG)  THEN
-         IF  uBus.wdata(signbit) = '1'  THEN
-            ioreg <= ioreg AND uBus.wdata(14 DOWNTO 0);
-         ELSE
-            ioreg <= ioreg OR  uBus.wdata(14 DOWNTO 0);
-         END IF;
-      END IF;
-      IF  reset = '1' AND NOT ASYNC_RESET  THEN
-         ioreg <= (OTHERS => '0');
-      END IF;
-   END IF;
-END PROCESS ioreg_proc;
-
-uBus.sources(IO_REG) <= resize(ioreg, data_width);
-
 led_proc: PROCESS (reset, clk)
 BEGIN
    IF  reset = '1' AND ASYNC_RESET  THEN
@@ -388,10 +269,9 @@ uBus.sources(LED_REG) <= resize(leds, data_width);
 leds_n(leds_n'high DOWNTO 1) <= NOT leds(leds_n'high DOWNTO 1);
 leds_n(0) <= NOT Ctrl(c_bitout) WHEN  SIMULATION  ELSE  NOT leds(0);
 
-flags(f_sw1) <= NOT switch_n(0);
-flags(f_sw2) <= NOT switch_n(1);
-flags(f_sw3) <= NOT switch_n(2);
-flags(f_sw4) <= NOT switch_n(3);
+flags(f_sw1) <= NOT buttons_n(0);
+flags(f_sw2) <= NOT buttons_n(1);
+flags(f_sw3) <= NOT buttons_n(2);
 
 time_int_proc : PROCESS (clk)
 BEGIN
