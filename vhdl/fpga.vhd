@@ -1,11 +1,13 @@
 -- ---------------------------------------------------------------------
+-- ---------------------------------------------------------------------
 -- @file : fpga.vhd for the Spartan-3A Evaluation Kit
 -- ---------------------------------------------------------------------
 --
+-- Last change: KS 02.04.2021 18:34:55
 -- @project: microCore
--- @language : VHDL-2008
+-- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
--- @contributors :
+-- @contributors:
 --
 -- @license: Do not use this file except in compliance with the License.
 -- You may obtain a copy of the Public License at
@@ -19,6 +21,9 @@
 --         This file should be edited for technology specific additions
 --         like e.g. pad assignments and it is the source of the uBus.
 --
+-- Version Author   Date       Changes
+--   210     ks    8-Jun-2020  initial version
+--  2300     ks    8-Mar-2021  converted to NUMERIC_STD
 -- ---------------------------------------------------------------------
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
@@ -31,11 +36,15 @@ ENTITY fpga IS PORT (
    clock        : IN  STD_LOGIC;        -- external clock input
    leds_out     : OUT UNSIGNED(3 downto 0);
    buttons      : in  STD_LOGIC_VECTOR(2 downto 0);
+-- external memory interface (unused on S3A-EVL)
+   ce_n        : OUT   STD_LOGIC;
+   oe_n        : OUT   STD_LOGIC;
+   we_n        : OUT   STD_LOGIC;
+   addr        : OUT   UNSIGNED(ram_addr_width-1 DOWNTO 0);
+   data        : INOUT UNSIGNED(ram_data_width-1 DOWNTO 0);
 -- umbilical uart for debugging
-   serial_rxd   : IN  STD_LOGIC;        -- incoming asynchronous data stream
-   serial_txd   : OUT STD_LOGIC;        -- outgoing data stream
-   rxd_out      : out STD_LOGIC;
-   txd_out      : out STD_LOGIC
+   dsu_rxd     : IN    STD_LOGIC;  -- incoming asynchronous data stream
+   dsu_txd     : OUT   STD_LOGIC   -- outgoing data stream
 );
 
 ATTRIBUTE LOC       : STRING;
@@ -62,23 +71,15 @@ ATTRIBUTE LOC      OF buttons    : SIGNAL IS "K3, H5, L3";
    ATTRIBUTE PULLMODE OF buttons : SIGNAL IS "UP";
    ATTRIBUTE IO_TYPE  OF buttons : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF serial_rxd     : SIGNAL IS "A3";
-   ATTRIBUTE PULLMODE OF serial_rxd  : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF serial_rxd  : SIGNAL IS "LVCMOS33";
+ATTRIBUTE LOC      OF dsu_rxd     : SIGNAL IS "A3";
+   ATTRIBUTE PULLMODE OF dsu_rxd  : SIGNAL IS "NONE";
+   ATTRIBUTE IO_TYPE  OF dsu_rxd  : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF serial_txd     : SIGNAL IS "B3";
-   ATTRIBUTE PULLMODE OF serial_txd  : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF serial_txd  : SIGNAL IS "LVCMOS33";
-   ATTRIBUTE DRIVE    OF serial_txd  : SIGNAL IS "8";
-   ATTRIBUTE SLEWRATE OF serial_txd  : SIGNAL IS "SLOW";
-
-ATTRIBUTE LOC      OF rxd_out     : SIGNAL IS "A8";
-   ATTRIBUTE PULLMODE of rxd_out  : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF rxd_out  : SIGNAL IS "LVCMOS33";
-
-ATTRIBUTE LOC      OF txd_out     : SIGNAL IS "C7";
-   ATTRIBUTE PULLMODE of txd_out  : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF txd_out  : SIGNAL IS "LVCMOS33";
+ATTRIBUTE LOC      OF dsu_txd     : SIGNAL IS "B3";
+   ATTRIBUTE PULLMODE OF dsu_txd  : SIGNAL IS "NONE";
+   ATTRIBUTE IO_TYPE  OF dsu_txd  : SIGNAL IS "LVCMOS33";
+   ATTRIBUTE DRIVE    OF dsu_txd  : SIGNAL IS "8";
+   ATTRIBUTE SLEWRATE OF dsu_txd  : SIGNAL IS "SLOW";
 
 END fpga;
 
@@ -90,9 +91,9 @@ ALIAS  clk        : STD_LOGIC IS uBus.clk;
 ALIAS  clk_en     : STD_LOGIC IS uBus.clk_en;
 
 SIGNAL reset_a    : STD_LOGIC; -- asynchronous reset positive logic
-SIGNAL reset_s    : STD_LOGIC; -- synchronized reset_button
-SIGNAL serial_rxd_s  : STD_LOGIC;
-SIGNAL serial_break  : STD_LOGIC;
+SIGNAL reset_s    : STD_LOGIC; -- synchronized reset_n
+SIGNAL dsu_rxd_s  : STD_LOGIC;
+SIGNAL dsu_break  : STD_LOGIC;
 
 COMPONENT microcore PORT (
    uBus        : IN    uBus_port;
@@ -118,12 +119,28 @@ COMPONENT uDatacache PORT (
    dma_rdata   : OUT data_bus
 ); END COMPONENT uDatacache;
 
-SIGNAL dcache_en    : STD_LOGIC;
 SIGNAL dcache_rdata : data_bus;
 SIGNAL mem_rdata    : data_bus;
 SIGNAL dma_mem      : datamem_port;
 SIGNAL dma_rdata    : data_bus;
 SIGNAL cache_addr   : data_addr;    -- for simulation only
+
+-- external memory
+COMPONENT external_SRAM GENERIC (
+   ram_addr_width : NATURAL;
+   ram_data_width : NATURAL;
+   delay_cnt      : NATURAL    -- delay_cnt+1 extra clock cycles for each memory access
+); PORT (
+   uBus        : IN    uBus_port;
+   ext_rdata   : OUT   data_bus;
+   delay       : OUT   STD_LOGIC;
+-- external SRAM
+   ce_n        : OUT   STD_LOGIC;
+   oe_n        : OUT   STD_LOGIC;
+   we_n        : OUT   STD_LOGIC;
+   addr        : OUT   UNSIGNED(ram_addr_width-1 DOWNTO 0);
+   data        : INOUT UNSIGNED(ram_data_width-1 DOWNTO 0)
+); END COMPONENT external_SRAM;
 
 SIGNAL ext_rdata    : data_bus;
 SIGNAL SRAM_delay   : STD_LOGIC;
@@ -132,8 +149,6 @@ SIGNAL SRAM_delay   : STD_LOGIC;
 SIGNAL leds         : byte;
 SIGNAL time_int     : STD_LOGIC;
 SIGNAL ioreg        : UNSIGNED(14 DOWNTO 0);
-
-SIGNAL serial_txd_buf : STD_LOGIC;
 
 BEGIN
 
@@ -147,15 +162,7 @@ reset_a <= reset_button;
 synch_reset: synchronize PORT MAP(clk, reset_a, reset_s);
 reset <= reset_a OR reset_s;
 
-synch_serial_rxd:   synchronize   PORT MAP(clk, serial_rxd, serial_rxd_s);
-
--- ---------------------------------------------------------------------
--- debugging
--- ---------------------------------------------------------------------
-
-rxd_out <= serial_rxd;
-txd_out <= serial_txd_buf;
-serial_txd <= serial_txd_buf;
+synch_dsu_rxd:   synchronize   PORT MAP(clk, dsu_rxd, dsu_rxd_s);
 
 -- ---------------------------------------------------------------------
 -- clk generation (perhaps a PLL will be used)
@@ -216,16 +223,16 @@ flags_pause <= '1' WHEN  uReg_write(uBus, FLAG_REG) AND uBus.wdata(signbit) = '0
 -- microcore interface
 -- ---------------------------------------------------------------------
 
-flags(f_dsu) <= NOT serial_break; -- '1' if debug terminal present
+flags(f_dsu) <= NOT dsu_break; -- '1' if debug terminal present
 
 uCore: microcore PORT MAP (
    uBus       => uBus,
    core       => core,
    memory     => memory,
 -- umbilical uart interface
-   rxd        => serial_rxd_s,
-   break      => serial_break,
-   txd        => serial_txd_buf
+   rxd        => dsu_rxd_s,
+   break      => dsu_break,
+   txd        => dsu_txd
 );
 
 -- control signals
@@ -270,6 +277,61 @@ internal_data_mem: uDatacache PORT MAP (
    dma_rdata    => dma_rdata
 );
 
+mem_rdata_proc : PROCESS (uBus, dcache_rdata, ext_rdata)
+BEGIN
+   mem_rdata <= dcache_rdata;
+   IF  uBus.ext_en = '1' AND WITH_EXTMEM  THEN
+      mem_rdata <= ext_rdata;
+   END IF;
+END PROCESS mem_rdata_proc;
+
+-- pragma translate_off
+memaddr_proc : PROCESS (clk)
+BEGIN
+   IF  rising_edge(clk)  THEN
+      IF  (clk_en AND core.mem_en) = '1'  THEN
+         cache_addr <= memory.addr; -- state of the internal blockRAM address register for simulation
+      END IF;
+END IF;
+END PROCESS memaddr_proc;
+-- pragma translate_on
+-- ---------------------------------------------------------------------
+-- external SRAM data memory
+-- ---------------------------------------------------------------------
+
+with_external_mem: IF  WITH_EXTMEM  GENERATE
+
+   SRAM: external_SRAM
+   GENERIC MAP (ram_addr_width, ram_data_width, 1)
+   PORT MAP (
+      uBus        => uBus,
+      ext_rdata   => ext_rdata,
+      delay       => SRAM_delay,
+   -- external SRAM
+      ce_n        => ce_n,
+      oe_n        => oe_n,
+      we_n        => we_n,
+      addr        => addr,
+      data        => data
+);
+
+END GENERATE with_external_mem; no_external_mem: IF  NOT WITH_EXTMEM  GENERATE
+
+   ext_rdata  <= (OTHERS => '0');
+   SRAM_delay <= '0';
+
+   ce_n <= '1';
+   we_n <= '1';
+   oe_n <= '1';
+   addr <= (OTHERS => '0');
+   data <= (OTHERS => 'Z');
+
+END GENERATE no_external_mem;
+
+-- ---------------------------------------------------------------------
+-- Spartan-3A Eval Kit specific IO
+-- ---------------------------------------------------------------------
+
 led_proc: PROCESS (reset, clk)
 BEGIN
    IF  reset = '1' AND ASYNC_RESET  THEN
@@ -308,3 +370,4 @@ END PROCESS time_int_proc;
 flags(i_time) <= time_int;
 
 END technology;
+
