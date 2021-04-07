@@ -50,6 +50,10 @@ XC3SPROG_EXE    ?= xc3sprog
 XC3SPROG_CABLE  ?= none
 XC3SPROG_OPTS   ?=
 
+AVS3A_EXE       ?= avs3a
+AVS3A_CABLE     ?= /dev/ttyACM1
+AVS3A_OPTS      ?= -s -b
+
 
 ###########################################################################
 # Internal variables, platform-specific definitions, and macros
@@ -70,7 +74,7 @@ endif
 TEST_NAMES = $(foreach file,$(VTEST) $(VHDTEST),$(basename $(file)))
 TEST_EXES = $(foreach test,$(TEST_NAMES),build/isim_$(test)$(EXE))
 
-RUN = @echo -ne "\n\n\e[1;33m======== $(1) ========\e[m\n\n"; \
+RUN = @/bin/echo -ne "\n\n\e[1;33m======== $(1) ========\e[m\n\n"; \
 	cd build && $(XILINX)/bin/$(XILINX_PLATFORM)/$(1)
 
 # isim executables don't work without this
@@ -113,7 +117,7 @@ build/$(PROJECT).scr: project.cfg
 	    "-p $(TARGET_PART)" \
 	    > build/$(PROJECT).scr
 
-$(BITFILE): project.cfg $(VSOURCE) $(CONSTRAINTS) build/$(PROJECT).prj build/$(PROJECT).scr
+$(BITFILE): project.cfg $(VSOURCE) $(VHDSOURCE) $(CONSTRAINTS) build/$(PROJECT).prj build/$(PROJECT).scr
 	@mkdir -p build
 	$(call RUN,xst) $(COMMON_OPTS) \
 	    -ifn $(PROJECT).scr
@@ -127,7 +131,7 @@ $(BITFILE): project.cfg $(VSOURCE) $(CONSTRAINTS) build/$(PROJECT).prj build/$(P
 	    -w $(PROJECT).map.ncd $(PROJECT).ncd $(PROJECT).pcf
 	$(call RUN,bitgen) $(COMMON_OPTS) $(BITGEN_OPTS) \
 	    -w $(PROJECT).ncd $(PROJECT).bit
-	@echo -ne "\e[1;32m======== OK ========\e[m\n"
+	@/bin/echo -ne "\e[1;32m======== OK ========\e[m\n"
 
 
 ###########################################################################
@@ -174,6 +178,11 @@ endif
 ifeq ($(PROGRAMMER), xc3sprog)
 prog: $(BITFILE)
 	$(XC3SPROG_EXE) -c $(XC3SPROG_CABLE) $(XC3SPROG_OPTS) $(BITFILE)
+endif
+
+ifeq ($(PROGRAMMER), avs3a)
+prog: $(BITFILE)
+	$(AVS3A_EXE) -p $(AVS3A_CABLE) $(AVS3A_OPTS) $(BITFILE)
 endif
 
 ifeq ($(PROGRAMMER), none)

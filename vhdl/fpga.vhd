@@ -27,13 +27,15 @@ USE work.functions_pkg.ALL;
 USE work.architecture_pkg.ALL;
 
 ENTITY fpga IS PORT (
-   reset_n     : IN    STD_LOGIC;
-   clock       : IN    STD_LOGIC; -- external clock input
-   leds_n      : OUT   UNSIGNED(3 downto 0);
-   buttons_n   : in STD_LOGIC_VECTOR(2 downto 0);
+   reset_button : IN  STD_LOGIC;
+   clock        : IN  STD_LOGIC;        -- external clock input
+   leds_out     : OUT UNSIGNED(3 downto 0);
+   buttons      : in  STD_LOGIC_VECTOR(2 downto 0);
 -- umbilical uart for debugging
-   dsu_rxd     : IN    STD_LOGIC;  -- incoming asynchronous data stream
-   dsu_txd     : OUT   STD_LOGIC   -- outgoing data stream
+   serial_rxd   : IN  STD_LOGIC;        -- incoming asynchronous data stream
+   serial_txd   : OUT STD_LOGIC;        -- outgoing data stream
+   rxd_out      : out STD_LOGIC;
+   txd_out      : out STD_LOGIC
 );
 
 ATTRIBUTE LOC       : STRING;
@@ -42,33 +44,41 @@ ATTRIBUTE IO_TYPE   : STRING;
 ATTRIBUTE DRIVE     : STRING;
 ATTRIBUTE SLEWRATE  : STRING;
 
-ATTRIBUTE LOC      OF reset_n     : SIGNAL IS "H4";
-   ATTRIBUTE PULLMODE OF reset_n  : SIGNAL IS "UP";
-   ATTRIBUTE IO_TYPE  OF reset_n  : SIGNAL IS "LVCMOS33";
+ATTRIBUTE LOC      OF reset_button     : SIGNAL IS "H4";
+   ATTRIBUTE PULLMODE OF reset_button  : SIGNAL IS "UP";
+   ATTRIBUTE IO_TYPE  OF reset_button  : SIGNAL IS "LVCMOS33";
 
 ATTRIBUTE LOC      OF clock       : SIGNAL IS "C10";
    ATTRIBUTE PULLMODE OF clock    : SIGNAL IS "NONE";
    ATTRIBUTE IO_TYPE  OF clock    : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF leds_n      : SIGNAL IS "D14, C16, C15, B15";
-   ATTRIBUTE PULLMODE OF leds_n   : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF leds_n   : SIGNAL IS "LVCMOS33";
-   ATTRIBUTE DRIVE    OF leds_n   : SIGNAL IS "12";
-   ATTRIBUTE SLEWRATE OF leds_n   : SIGNAL IS "SLOW";
+ATTRIBUTE LOC      OF leds_out    : SIGNAL IS "D14, C16, C15, B15";
+   ATTRIBUTE PULLMODE OF leds_out : SIGNAL IS "NONE";
+   ATTRIBUTE IO_TYPE  OF leds_out : SIGNAL IS "LVCMOS33";
+   ATTRIBUTE DRIVE    OF leds_out : SIGNAL IS "12";
+   ATTRIBUTE SLEWRATE OF leds_out : SIGNAL IS "SLOW";
 
-ATTRIBUTE LOC      OF buttons_n    : SIGNAL IS "K3, H5, L3";
-   ATTRIBUTE PULLMODE OF buttons_n : SIGNAL IS "UP";
-   ATTRIBUTE IO_TYPE  OF buttons_n : SIGNAL IS "LVCMOS33";
+ATTRIBUTE LOC      OF buttons    : SIGNAL IS "K3, H5, L3";
+   ATTRIBUTE PULLMODE OF buttons : SIGNAL IS "UP";
+   ATTRIBUTE IO_TYPE  OF buttons : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF dsu_rxd     : SIGNAL IS "A3";
-   ATTRIBUTE PULLMODE OF dsu_rxd  : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF dsu_rxd  : SIGNAL IS "LVCMOS33";
+ATTRIBUTE LOC      OF serial_rxd     : SIGNAL IS "A3";
+   ATTRIBUTE PULLMODE OF serial_rxd  : SIGNAL IS "NONE";
+   ATTRIBUTE IO_TYPE  OF serial_rxd  : SIGNAL IS "LVCMOS33";
 
-ATTRIBUTE LOC      OF dsu_txd     : SIGNAL IS "B3";
-   ATTRIBUTE PULLMODE OF dsu_txd  : SIGNAL IS "NONE";
-   ATTRIBUTE IO_TYPE  OF dsu_txd  : SIGNAL IS "LVCMOS33";
-   ATTRIBUTE DRIVE    OF dsu_txd  : SIGNAL IS "8";
-   ATTRIBUTE SLEWRATE OF dsu_txd  : SIGNAL IS "SLOW";
+ATTRIBUTE LOC      OF serial_txd     : SIGNAL IS "B3";
+   ATTRIBUTE PULLMODE OF serial_txd  : SIGNAL IS "NONE";
+   ATTRIBUTE IO_TYPE  OF serial_txd  : SIGNAL IS "LVCMOS33";
+   ATTRIBUTE DRIVE    OF serial_txd  : SIGNAL IS "8";
+   ATTRIBUTE SLEWRATE OF serial_txd  : SIGNAL IS "SLOW";
+
+ATTRIBUTE LOC      OF rxd_out     : SIGNAL IS "A8";
+   ATTRIBUTE PULLMODE of rxd_out  : SIGNAL IS "NONE";
+   ATTRIBUTE IO_TYPE  OF rxd_out  : SIGNAL IS "LVCMOS33";
+
+ATTRIBUTE LOC      OF txd_out     : SIGNAL IS "C7";
+   ATTRIBUTE PULLMODE of txd_out  : SIGNAL IS "NONE";
+   ATTRIBUTE IO_TYPE  OF txd_out  : SIGNAL IS "LVCMOS33";
 
 END fpga;
 
@@ -80,9 +90,9 @@ ALIAS  clk        : STD_LOGIC IS uBus.clk;
 ALIAS  clk_en     : STD_LOGIC IS uBus.clk_en;
 
 SIGNAL reset_a    : STD_LOGIC; -- asynchronous reset positive logic
-SIGNAL reset_s    : STD_LOGIC; -- synchronized reset_n
-SIGNAL dsu_rxd_s  : STD_LOGIC;
-SIGNAL dsu_break  : STD_LOGIC;
+SIGNAL reset_s    : STD_LOGIC; -- synchronized reset_button
+SIGNAL serial_rxd_s  : STD_LOGIC;
+SIGNAL serial_break  : STD_LOGIC;
 
 COMPONENT microcore PORT (
    uBus        : IN    uBus_port;
@@ -123,6 +133,8 @@ SIGNAL leds         : byte;
 SIGNAL time_int     : STD_LOGIC;
 SIGNAL ioreg        : UNSIGNED(14 DOWNTO 0);
 
+SIGNAL serial_txd_buf : STD_LOGIC;
+
 BEGIN
 
 flags(7 DOWNTO 5) <= (OTHERS => '0');
@@ -131,11 +143,19 @@ flags(7 DOWNTO 5) <= (OTHERS => '0');
 -- input signal synchronization
 -- ---------------------------------------------------------------------
 
-reset_a <= NOT reset_n;
+reset_a <= reset_button;
 synch_reset: synchronize PORT MAP(clk, reset_a, reset_s);
 reset <= reset_a OR reset_s;
 
-synch_dsu_rxd:   synchronize   PORT MAP(clk, dsu_rxd, dsu_rxd_s);
+synch_serial_rxd:   synchronize   PORT MAP(clk, serial_rxd, serial_rxd_s);
+
+-- ---------------------------------------------------------------------
+-- debugging
+-- ---------------------------------------------------------------------
+
+rxd_out <= serial_rxd;
+txd_out <= serial_txd_buf;
+serial_txd <= serial_txd_buf;
 
 -- ---------------------------------------------------------------------
 -- clk generation (perhaps a PLL will be used)
@@ -196,16 +216,16 @@ flags_pause <= '1' WHEN  uReg_write(uBus, FLAG_REG) AND uBus.wdata(signbit) = '0
 -- microcore interface
 -- ---------------------------------------------------------------------
 
-flags(f_dsu) <= NOT dsu_break; -- '1' if debug terminal present
+flags(f_dsu) <= NOT serial_break; -- '1' if debug terminal present
 
 uCore: microcore PORT MAP (
    uBus       => uBus,
    core       => core,
    memory     => memory,
 -- umbilical uart interface
-   rxd        => dsu_rxd_s,
-   break      => dsu_break,
-   txd        => dsu_txd
+   rxd        => serial_rxd_s,
+   break      => serial_break,
+   txd        => serial_txd_buf
 );
 
 -- control signals
@@ -266,12 +286,12 @@ END PROCESS led_proc;
 
 uBus.sources(LED_REG) <= resize(leds, data_width);
 
-leds_n(leds_n'high DOWNTO 1) <= NOT leds(leds_n'high DOWNTO 1);
-leds_n(0) <= NOT Ctrl(c_bitout) WHEN  SIMULATION  ELSE  NOT leds(0);
+leds_out(leds_out'high DOWNTO 1) <= leds(leds_out'high DOWNTO 1);
+leds_out(0) <= NOT Ctrl(c_bitout) WHEN  SIMULATION  ELSE  NOT leds(0);
 
-flags(f_sw1) <= NOT buttons_n(0);
-flags(f_sw2) <= NOT buttons_n(1);
-flags(f_sw3) <= NOT buttons_n(2);
+flags(f_sw1) <= buttons(0);
+flags(f_sw2) <= buttons(1);
+flags(f_sw3) <= buttons(2);
 
 time_int_proc : PROCESS (clk)
 BEGIN

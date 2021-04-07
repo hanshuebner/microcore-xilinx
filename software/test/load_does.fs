@@ -1,6 +1,5 @@
 \ 
-\ Last change: KS 13.03.2021 19:11:36
-\ Last check in : $Rev: 667 $ $Date:: 2021-03-14 #$
+\ Last change: KS 13.03.2021 19:16:35
 \
 \ MicroCore load screen for testing Create ... Does
 \

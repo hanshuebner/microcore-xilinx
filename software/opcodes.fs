@@ -2,12 +2,12 @@
 \ @file : opcodes.fs
 \ ----------------------------------------------------------------------
 \
-\ Last change: KS 18.02.2021 18:41:21
-\ Project : microCore
-\ Language : gforth_0.6.2
-\ Last check in : $Rev: 644 $ $Date:: 2021-02-17 #$
+\ Last change: KS 05.04.2021 16:48:08
+\ @project: microForth/microCore
+\ @language: gforth_0.6.2
 \ @copyright (c): Free Software Foundation
 \ @original author: ks - Klaus Schleisiek
+\ @contributor:
 \
 \ @license: This file is part of microForth.
 \ microForth is free software for microCore that loads on top of Gforth;

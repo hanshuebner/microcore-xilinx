@@ -1,6 +1,5 @@
 \
 \ Last change: KS 13.03.2021 19:11:11
-\ Last check in : $Rev: 551 $ $Date:: 2020-05-26 #$
 \
 \ MicroCore load screen for execution on the target.
 \ Floating point library package.

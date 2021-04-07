@@ -1,6 +1,5 @@
 \
 \ Last change: KS 13.03.2021 19:11:12
-\ Last check in : $Rev: 643 $ $Date:: 2021-02-11 #$
 \
 \ Basic microCore load screen for execution on the target.
 \

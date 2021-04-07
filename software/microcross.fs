@@ -2,12 +2,12 @@
 \ @file : microcross.fs
 \ ----------------------------------------------------------------------
 \
-\ Last change: KS 14.03.2021 00:43:59
-\ Project : microCore
-\ Language : gforth_0.6.2
-\ Last check in : $Rev: 667 $ $Date:: 2021-03-14 #$
+\ Last change: KS 05.04.2021 17:21:50
+\ @project: microForth/microCore
+\ @language: gforth_0.6.2
 \ @copyright (c): Free Software Foundation
 \ @original author: ks - Klaus Schleisiek
+\ @contributor:
 \
 \ @license: This file is part of microForth.
 \ microForth is free software for microCore that loads on top of Gforth;
@@ -26,18 +26,10 @@
 \ Version Author   Date       Changes
 \   210     ks   14-Jun-2020  initial version
 \   2200    ks   19-Oct-2020  Library mechanism integrated
-\   2300    ks   17-Feb-2021  OOP mechanism integrated
+\   2300    ks   18-Feb-2021  OOP mechanism integrated
 \ ----------------------------------------------------------------------
 Forth definitions
 
-: $Rev:         &36 parse s, postpone \ ; immediate
-: $Date::  [char] # parse s, postpone \ ; immediate
-
-Create revision $Rev: 667 $           \ Subversion revision number
-Create datum    $Date:: 2021-03-14 #$ \ Subversion check in date
-
-: .revision ( -- )  revision count type ;
-: .date     ( -- )  datum count type ;
 : .version  ( -- )  temp-decimal Version u. #BS emit [char] _ emit data_width . ;
 
 \ Debugger forward references
@@ -1110,7 +1102,7 @@ Does> ( -- ) [ here (doColon ! ]  Method   @
 : init:  ( <name> -- # )   T : H here Init-link @ , Init-link ! ;
 
 : new      ( -- )   \ Initialize cross-compiler for another compilation run
-   cr ." microCross revision " .revision   #BS emit   ." , date " .date ." by ks, gforth port and debugger by uho"
+   cr ." microCross version " .version ." by ks, gforth port and debugger by uho"
    Memory [ #datamask #maxprog umin 1+ cells ] Literal erase
    Data #maxdata cells erase   Initials 3 cells erase
    Tcp off  Tdp off  if-prefix  Colons off   Sequential off
@@ -1127,7 +1119,7 @@ Does> ( -- ) [ here (doColon ! ]  Method   @
 : end  ( -- )    \ Finish target compilation run
    s" Label Initialization" evaluate
    save-data   host-compile definitions   temp-decimal
-   cr there . ." instructions compiled for microCore version " .version
+   cr there . ." instructions compiled
 ;
 : Host   ( -- )  host-compile definitions ;
 
@@ -1164,14 +1156,16 @@ T h' Host H   Alias Host
 \ ----------------------------------------------------------------------
 T definitions
 
-H simulation            T Version SIMULATION     \ simulating?
-H extended              T Version EXTENDED       \ extended instruction set?
-H with_mult             T Version WITH_MULT      \ hardware multiply available?
-H with_float            T Version WITH_FLOAT
-H with_up_download      T Version WITH_UP_DOWNLOAD
+H SIMULATION            T Version SIMULATION     \ simulating?
+H EXTENDED              T Version EXTENDED       \ extended instruction set?
+H WITH_MULT             T Version WITH_MULT      \ hardware multiply available?
+H WITH_FLOAT            T Version WITH_FLOAT
+H WITH_UP_DOWNLOAD      T Version WITH_UP_DOWNLOAD
+H data_addr_width
+  cache_addr_width u>   T Version WITH_EXTMEM
 
 H data_width            T Constant data_width
-H ext_data_width        T Constant ext_data_width
+H ram_data_width        T Constant ram_data_width
 H data_addr_width       T Constant data_addr_width
 H cache_addr_width      T Constant cache_addr_width
 H exp_width             T Constant exp_width

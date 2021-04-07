@@ -1,6 +1,5 @@
 \
-\ Last change: KS 13.03.2021 19:11:43
-\ Last check in : $Rev: 667 $ $Date:: 2021-03-14 #$
+\ Last change: KS 13.03.2021 19:11:16
 \
 \ MicroCore load screen to test all aspects of the multitasker.
 \ Use  .tasks and .semas to observe the state of the system.

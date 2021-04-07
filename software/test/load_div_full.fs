@@ -1,6 +1,5 @@
 \ 
-\ Last change: KS 13.03.2021 19:11:34
-\ Last check in : $Rev: 667 $ $Date:: 2021-03-14 #$
+\ Last change: KS 13.03.2021 19:16:24
 \
 \ MicroCore load screen for the core test program that is transferred
 \ into the program memory via the debug umbilical

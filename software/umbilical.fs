@@ -2,12 +2,12 @@
 \ @file : umbilical.fs
 \ ----------------------------------------------------------------------
 \
-\ Last change: KS 14.06.2020 17:06:56
-\ Project : microCore
-\ Language : gforth_0.6.2
-\ Last check in : $Rev: 562 $ $Date:: 2020-06-15 #$
+\ Last change: KS 24.03.2021 17:54:56
+\ @project: microForth/microCore
+\ @language: gforth_0.6.2
 \ @copyright (c): Free Software Foundation
 \ @original author: ks - Klaus Schleisiek
+\ @contributor:
 \
 \ @license: This file is part of microForth.
 \ microForth is free software for microCore that loads on top of Gforth;

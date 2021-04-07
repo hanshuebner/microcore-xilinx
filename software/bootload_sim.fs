@@ -2,12 +2,12 @@
 \ @file : bootload_sim.fs
 \ ----------------------------------------------------------------------
 \
-\ Last change: KS 14.06.2020 17:04:05
-\ Project : microCore
-\ Language : gforth_0.6.2
-\ Last check in : $Rev: 644 $ $Date:: 2021-02-17 #$
+\ Last change: KS 05.04.2021 16:46:46
+\ @project: microForth/microCore
+\ @language: gforth_0.6.2
 \ @copyright (c): Free Software Foundation
 \ @original author: ks - Klaus Schleisiek
+\ @contributor:
 \
 \ @license: This file is part of microForth.
 \ microForth is free software for microCore that loads on top of Gforth;
@@ -42,7 +42,6 @@ Target new                      \ go into target compilation mode and initialize
 0 data-origin
 
 ] 0 noop BRANCH [            \ immediately go to the preset program memory
-\ ] 0 BEGIN REPEAT [          \ hang in endless loop waiting for program loading via umbilical
 
 end
 

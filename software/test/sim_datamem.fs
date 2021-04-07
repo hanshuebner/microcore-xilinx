@@ -1,9 +1,9 @@
 \ 
-\ Last change: KS 11.11.2020 18:09:30
+\ Last change: KS 15.11.2020 14:03:48
 \
-\ MicroCore load screen for simulation.
+\ MicroCore load screen for simulating internal and external data memory.
 \ It produces program.mem for initialization of the program memory during simulation.
-\ Use wave signal script xxxxxxxxx.do in the simulator directory.
+\ Use wave signal scripts datamem.do and ext_datamem.do in the simulator directory.
 \
 Only Forth also definitions 
 
@@ -21,14 +21,20 @@ Target new initialized          \ go into target compilation mode and initialize
           0 data-origin
 
 include constants.fs            \ microCore Register addresses and bits
-library forth_lib.fs
 
-\ ----------------------------------------------------------------------
-\ Booting and TRAPs
-\ ----------------------------------------------------------------------
+data_width &19 < [IF]
+     $1234 Constant #data  \ 16 and 18 bit
+[ELSE]
+   $123456 Constant #data  \ >= 24 bits
+[THEN]
 
+: datatest  ( -- )
+   #data    0 st ld 1+ st @
+         #extern st ld 1+ st @
+;
 : boot  ( -- )
-   BEGIN REPEAT
+   datatest
+   BEGIN  REPEAT
 ;
 
 #reset TRAP: rst    ( -- )            boot              ;  \ compile branch to boot at reset vector location
@@ -39,4 +45,4 @@ library forth_lib.fs
 
 end
 
-MEM-file program.mem cr .( written to program.mem )   
+MEM-file program.mem cr .( sim_datamem.fs written to program.mem )

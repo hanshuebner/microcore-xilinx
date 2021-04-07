@@ -2,12 +2,12 @@
 \ @file : library.fs
 \ ----------------------------------------------------------------------
 \
-\ Last change: KS 12.03.2021 18:12:17
-\ Project : microCore
-\ Language : gforth_0.6.2
-\ Last check in : $Rev: 573 $ $Date:: 2020-07-08 #$
+\ Last change: KS 05.04.2021 16:47:46
+\ @project: microForth/microCore
+\ @language: gforth_0.6.2
 \ @copyright (c): Free Software Foundation
 \ @original author: ks - Klaus Schleisiek
+\ @contributor:
 \
 \ @license: This file is part of microForth.
 \ microForth is free software for microCore that loads on top of Gforth;
@@ -27,7 +27,7 @@
 \
 \ Version Author   Date      Changes
 \   2200    ks   24-Oct-2020 initial version
-\   2300    ks   12-Feb-2021 compiler switch WITH_PROG_RW eliminate
+\   2300    ks   12-Mar-2021 compiler switch WITH_PROG_RW eliminated
 \                            Bugfix in exec-libdef
 \ ----------------------------------------------------------------------
 Forth definitions
@@ -188,11 +188,11 @@ Predefined definitions Forth
 ' and                Alias and
 ' or                 Alias or
 
-' simulation         Alias SIMULATION     \ simulating?
-' extended           Alias EXTENDED       \ extended instruction set?
-' with_mult          Alias WITH_MULT      \ hardware multiply available?
-' with_float         Alias WITH_FLOAT
-' with_up_download   Alias WITH_UP_DOWNLOAD
+' SIMULATION         Alias SIMULATION     \ simulating?
+' EXTENDED           Alias EXTENDED       \ extended instruction set?
+' WITH_MULT          Alias WITH_MULT      \ hardware multiply available?
+' WITH_FLOAT         Alias WITH_FLOAT
+' WITH_UP_DOWNLOAD   Alias WITH_UP_DOWNLOAD
 
 : ~   ( -- )   libgroup-start ;
 

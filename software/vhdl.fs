@@ -2,12 +2,12 @@
 \ @file : vhdl.fs
 \ ----------------------------------------------------------------------
 \
-\ Last change: KS 07.03.2021 11:55:15
-\ Project : microCore
-\ Language : gforth_0.6.2
-\ Last check in : $Rev: 657 $ $Date:: 2021-03-08 #$
+\ Last change: KS 02.04.2021 12:04:43
+\ @project: microForth/microCore
+\ @language: gforth_0.6.2
 \ @copyright (c): Free Software Foundation
 \ @original author: ks - Klaus Schleisiek
+\ @contributor:
 \
 \ @license: This file is part of microForth.
 \ microForth is free software for microCore that loads on top of Gforth;
@@ -37,7 +37,7 @@
 \ ----------------------------------------------------------------------
 \ E.g. the following VHDL expressions will be interpreted by Forth:
 \
-\ CONSTANT with_mult   : STD_LOGIC := '0';
+\ CONSTANT WITH_MULT   : BOOLEAN   := false;
 \ CONSTANT data_width  : NATURAL   := 16;
 \ CONSTANT addr_rstack : NATURAL   := 16#C00#;
 \ CONSTANT flag_reg    : INTEGER   := -2;
