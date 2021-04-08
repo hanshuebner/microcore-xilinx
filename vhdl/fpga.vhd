@@ -349,7 +349,7 @@ END PROCESS led_proc;
 uBus.sources(LED_REG) <= resize(leds, data_width);
 
 leds_out(leds_out'high DOWNTO 1) <= leds(leds_out'high DOWNTO 1);
-leds_out(0) <= NOT Ctrl(c_bitout) WHEN  SIMULATION  ELSE  NOT leds(0);
+leds_out(0) <= NOT Ctrl(c_bitout) WHEN  SIMULATION  ELSE leds(0);
 
 flags(f_sw1) <= buttons(0);
 flags(f_sw2) <= buttons(1);
