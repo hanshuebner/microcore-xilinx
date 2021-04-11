@@ -6,7 +6,9 @@
 ## worldwide. This software is distributed without any warranty.
 ###########################################################################
 
-include project.cfg
+CONFIG ?= spartan3a-evl.cfg
+
+include $(CONFIG)
 
 
 ###########################################################################
@@ -90,7 +92,7 @@ default: $(BITFILE)
 clean:
 	rm -rf build
 
-build/$(PROJECT).prj: project.cfg
+build/$(PROJECT).prj: $(CONFIG)
 	@echo "Updating $@"
 	@mkdir -p build
 	@rm -f $@
@@ -103,7 +105,7 @@ build/$(PROJECT)_sim.prj: build/$(PROJECT).prj
 	@$(foreach file,$(VHDTEST),echo "vhdl work \"../$(file)\"" >> $@;)
 	@echo "verilog work $(XILINX)/verilog/src/glbl.v" >> $@
 
-build/$(PROJECT).scr: project.cfg
+build/$(PROJECT).scr: $(CONFIG)
 	@echo "Updating $@"
 	@mkdir -p build
 	@rm -f $@
@@ -117,7 +119,7 @@ build/$(PROJECT).scr: project.cfg
 	    "-p $(TARGET_PART)" \
 	    > build/$(PROJECT).scr
 
-$(BITFILE): project.cfg $(VSOURCE) $(VHDSOURCE) $(CONSTRAINTS) build/$(PROJECT).prj build/$(PROJECT).scr
+$(BITFILE): $(CONFIG) $(VSOURCE) $(VHDSOURCE) $(CONSTRAINTS) build/$(PROJECT).prj build/$(PROJECT).scr
 	@mkdir -p build
 	$(call RUN,xst) $(COMMON_OPTS) \
 	    -ifn $(PROJECT).scr
@@ -138,7 +140,7 @@ $(BITFILE): project.cfg $(VSOURCE) $(VHDSOURCE) $(CONSTRAINTS) build/$(PROJECT).
 # Testing (work in progress)
 ###########################################################################
 
-trace: project.cfg $(BITFILE)
+trace: $(CONFIG) $(BITFILE)
 	$(call RUN,trce) $(COMMON_OPTS) $(TRACE_OPTS) \
 	    $(PROJECT).ncd $(PROJECT).pcf
 
