@@ -6,7 +6,8 @@
 ## worldwide. This software is distributed without any warranty.
 ###########################################################################
 
-CONFIG ?= spartan3a-evl.cfg
+PROJECT ?= spartan3a-evl
+CONFIG ?= $(PROJECT).cfg
 
 include $(CONFIG)
 
