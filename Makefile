@@ -6,8 +6,9 @@
 ## worldwide. This software is distributed without any warranty.
 ###########################################################################
 
+XILINX  ?= =/opt/Xilinx/14.7/ISE_DS/ISE
 PROJECT ?= spartan3a-evl
-CONFIG ?= $(PROJECT).cfg
+CONFIG  ?= $(PROJECT).cfg
 
 include $(CONFIG)
 
