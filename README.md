@@ -2,7 +2,7 @@
 
 This directory contains an adaption of the microCore CPU for Xilinx
 FPGAs.  microCore has been developed by Klaus Schleisiek, please see
-[His repository](https://github.com/microCore-VHDL/microCore) for
+his [repository](https://github.com/microCore-VHDL/microCore) for
 documentation and license information.
 
 At this point, this repository a version of the core for the ancient
