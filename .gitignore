@@ -1,4 +1,5 @@
 /build
 netlist.lst
 microcore-s3a.bld
+/vhdl-experimental
 /_xmsgs
