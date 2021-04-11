@@ -2,10 +2,9 @@
 -- @file : uCore.vhd
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 01.04.2021 18:13:37
--- Last check in: $Rev: 683 $ $Date:: 2021-04-01 #$
+-- Last change: KS 05.04.2021 16:53:29
 -- @project: microCore
--- @language : VHDL-2008
+-- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
 -- @contributors :
 --

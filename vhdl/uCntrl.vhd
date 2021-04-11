@@ -2,10 +2,9 @@
 -- @file : uCntrl.vhd
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 01.04.2021 18:16:34
--- Last check in: $Rev: 683 $ $Date:: 2021-04-01 #$
+-- Last change: KS 10.04.2021 17:27:16
 -- @project: microCore
--- @language : VHDL-2008
+-- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
 -- @contributors :
 --
@@ -143,7 +142,7 @@ SIGNAL interrupt    : STD_LOGIC;
 -- timer
 CONSTANT time_cnt   : NATURAL := (clk_frequency/(1000*ticks_per_ms))-1;
 SIGNAL time_ctr     : NATURAL RANGE 0 TO time_cnt; -- divides system clock
-SIGNAL time         : UNSIGNED(data_width-1 DOWNTO 0);
+SIGNAL time         : data_bus;
 SIGNAL tick         : STD_LOGIC;
 
 BEGIN
@@ -258,7 +257,7 @@ BEGIN
 END PROCESS uReg_proc;
 
 data_stack: internal_ram
-GENERIC MAP (data_width, dsp_width, "rw_check")
+GENERIC MAP (data_width, 2**dsp_width, "rw_check")
 PORT MAP (
    clk   => clk,
    en    => core_en,

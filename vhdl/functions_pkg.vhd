@@ -2,10 +2,9 @@
 -- @file : functions_pkg.vhd
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 03.04.2021 19:13:38
--- Last check in: $Rev: 683 $ $Date:: 2021-04-01 #$
+-- Last change: KS 10.04.2021 17:22:18
 -- @project: microCore
--- @language : VHDL-2008
+-- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
 -- @contributors :
 --
@@ -106,18 +105,18 @@ END COMPONENT;
 
 COMPONENT asynch_dpram
 GENERIC (data_width  : INTEGER;
-         addr_width  : INTEGER);
+         ram_size    : INTEGER);
 PORT (clk   : IN  STD_LOGIC;
       we    : IN  STD_LOGIC;
-      waddr : IN  UNSIGNED(addr_width-1 DOWNTO 0);
-      di    : IN  UNSIGNED(data_width-1 DOWNTO 0);
-      raddr : IN  UNSIGNED(addr_width-1 DOWNTO 0);
-      do    : OUT UNSIGNED(data_width-1 DOWNTO 0));
+      waddr : IN  UNSIGNED;
+      di    : IN  UNSIGNED;
+      raddr : IN  UNSIGNED;
+      do    : OUT UNSIGNED);
 END COMPONENT;
 
 COMPONENT asynch_ram
 GENERIC (data_width : INTEGER;
-         addr_width : INTEGER);
+         ram_size   : INTEGER);
 PORT (clk   : IN    STD_LOGIC;
       we    : IN    STD_LOGIC;
       addr  : IN    UNSIGNED;
@@ -127,7 +126,7 @@ END COMPONENT;
 
 COMPONENT internal_ram GENERIC (
    data_width : INTEGER;
-   addr_width : INTEGER;
+   ram_size   : INTEGER;
    ramstyle   : STRING := "block_ram";
    init_file  : STRING := ""
 ); PORT (
@@ -141,7 +140,7 @@ COMPONENT internal_ram GENERIC (
 
 COMPONENT internal_dpram GENERIC (
    data_width : INTEGER;
-   addr_width : INTEGER;
+   ram_size   : INTEGER;
    ramstyle   : STRING := "block_ram";
    init_file  : STRING := ""
 ); PORT (
@@ -628,18 +627,18 @@ USE work.functions_pkg.ALL;
 
 ENTITY asynch_dpram IS
 GENERIC (data_width  : INTEGER;
-         addr_width  : INTEGER);
+         ram_size    : INTEGER);
 PORT (clk   : IN  STD_LOGIC;
       we    : IN  STD_LOGIC;
-      waddr : IN  UNSIGNED(addr_width-1 DOWNTO 0);
+      waddr : IN  UNSIGNED(log2(ram_size)-1 DOWNTO 0);
       di    : IN  UNSIGNED(data_width-1 DOWNTO 0);
-      raddr : IN  UNSIGNED(addr_width-1 DOWNTO 0);
+      raddr : IN  UNSIGNED(log2(ram_size)-1 DOWNTO 0);
       do    : OUT UNSIGNED(data_width-1 DOWNTO 0));
 END asynch_dpram;
 
 ARCHITECTURE inference_model OF asynch_dpram IS
 
-TYPE ram_type IS ARRAY (2**addr_width-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
+TYPE ram_type IS ARRAY (ram_size-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
 
 SIGNAL ram : ram_type;
 
@@ -669,17 +668,17 @@ USE work.functions_pkg.ALL;
 
 ENTITY asynch_ram IS
 GENERIC (data_width  : INTEGER;
-         addr_width  : INTEGER);
+         ram_size    : INTEGER);
 PORT (clk   : IN  STD_LOGIC;
       we    : IN  STD_LOGIC;
-      addr  : IN  UNSIGNED(addr_width-1 DOWNTO 0);
+      addr  : IN  UNSIGNED(log2(ram_size)-1 DOWNTO 0);
       di    : IN  UNSIGNED(data_width-1 DOWNTO 0);
       do    : OUT UNSIGNED(data_width-1 DOWNTO 0));
 END asynch_ram;
 
 ARCHITECTURE inference_model OF asynch_ram IS
 
-TYPE ram_type IS ARRAY (2**addr_width-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
+TYPE ram_type IS ARRAY (ram_size-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
 
 SIGNAL ram : ram_type;
 
@@ -714,14 +713,14 @@ USE work.functions_pkg.ALL;
 
 ENTITY internal_ram IS GENERIC (
    data_width : INTEGER;
-   addr_width : INTEGER;
+   ram_size   : INTEGER;
    ramstyle   : STRING;
    init_file  : STRING
 ); PORT (
    clk   : IN    STD_LOGIC;
    en    : IN    STD_LOGIC;
    we    : IN    STD_LOGIC;
-   addr  : IN    UNSIGNED(addr_width-1 DOWNTO 0);
+   addr  : IN    UNSIGNED(log2(ram_size)-1 DOWNTO 0);
    di    : IN    UNSIGNED(data_width-1 DOWNTO 0);
    do    : OUT   UNSIGNED(data_width-1 DOWNTO 0)
 ); END internal_ram;
@@ -730,10 +729,10 @@ ARCHITECTURE inference_model OF internal_ram IS
 
 ATTRIBUTE syn_ramstyle : STRING;
 
-TYPE ram_type IS ARRAY (2**addr_width-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
+TYPE ram_type IS ARRAY (ram_size-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
 
 SIGNAL ram        : ram_type; ATTRIBUTE syn_ramstyle OF ram : SIGNAL IS ramstyle;
-SIGNAL addr_d     : UNSIGNED(addr_width-1 DOWNTO 0);
+SIGNAL addr_d     : UNSIGNED(log2(ram_size)-1 DOWNTO 0);
 
 CONSTANT data_hex : INTEGER := next_quad(data_width);
 
@@ -746,7 +745,7 @@ initialized_ram: PROCESS(clk)
 	VARIABLE char    : character;
 	VARIABLE adr     : UNSIGNED(15 DOWNTO 0);
 	VARIABLE buf     : UNSIGNED(data_hex-1 DOWNTO 0);
-	VARIABLE loc     : INTEGER RANGE 0 TO 2**addr_width+1;
+	VARIABLE loc     : INTEGER RANGE 0 TO ram_size+1;
 BEGIN
 -- pragma translate_off
 	IF  first AND init_file /= ""  THEN
@@ -764,9 +763,9 @@ BEGIN
             	hread(l, buf);  -- read 16 bit addresses = 4 hex digits
                ram(loc) <= buf(data_width-1 DOWNTO 0);
                loc := loc + 1;
-               IF  loc >= (2**addr_width)  THEN  EXIT;  END IF;
+               IF  loc >= ram_size  THEN  EXIT;  END IF;
             END LOOP;
-            IF  loc >= (2**addr_width)  THEN  EXIT;  END IF;
+            IF  loc >= ram_size  THEN  EXIT;  END IF;
          END IF;
       END LOOP;
 		file_close(tcf);
@@ -805,19 +804,19 @@ USE work.functions_pkg.ALL;
 
 ENTITY internal_dpram IS GENERIC (
    data_width : INTEGER;
-   addr_width : INTEGER;
+   ram_size   : INTEGER;
    ramstyle   : STRING;
    init_file  : STRING
 ); PORT (
    clk   : IN    STD_LOGIC;
    ena   : IN    STD_LOGIC;
    wea   : IN    STD_LOGIC;
-   addra : IN    UNSIGNED(addr_width-1 DOWNTO 0);
+   addra : IN    UNSIGNED(log2(ram_size)-1 DOWNTO 0);
    dia   : IN    UNSIGNED(data_width-1 DOWNTO 0);
    doa   : OUT   UNSIGNED(data_width-1 DOWNTO 0);
    enb   : IN    STD_LOGIC;
    web   : IN    STD_LOGIC;
-   addrb : IN    UNSIGNED(addr_width-1 DOWNTO 0);
+   addrb : IN    UNSIGNED(log2(ram_size)-1 DOWNTO 0);
    dib   : IN    UNSIGNED(data_width-1 DOWNTO 0);
    dob   : OUT   UNSIGNED(data_width-1 DOWNTO 0)
 ); END internal_dpram;
@@ -826,11 +825,11 @@ ARCHITECTURE inference_model OF internal_dpram IS
 
 ATTRIBUTE syn_ramstyle : STRING;
 
-TYPE ram_type IS ARRAY (2**addr_width-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
+TYPE ram_type IS ARRAY (ram_size-1 DOWNTO 0) OF UNSIGNED(data_width-1 DOWNTO 0);
 
 SIGNAL ram        : ram_type; ATTRIBUTE syn_ramstyle OF ram : SIGNAL IS ramstyle;
-SIGNAL addra_d    : UNSIGNED(addr_width-1 DOWNTO 0);
-SIGNAL addrb_d    : UNSIGNED(addr_width-1 DOWNTO 0);
+SIGNAL addra_d    : UNSIGNED(log2(ram_size)-1 DOWNTO 0);
+SIGNAL addrb_d    : UNSIGNED(log2(ram_size)-1 DOWNTO 0);
 
 CONSTANT data_hex : INTEGER := next_quad(data_width);
 
@@ -843,7 +842,7 @@ initialized_ram: PROCESS(clk)
 	VARIABLE char    : character;
 	VARIABLE adr     : UNSIGNED(15 DOWNTO 0);
 	VARIABLE buf     : UNSIGNED(data_hex-1 DOWNTO 0);
-	VARIABLE loc     : INTEGER RANGE 0 TO 2**addr_width+1;
+	VARIABLE loc     : INTEGER RANGE 0 TO ram_size+1;
 BEGIN
 -- pragma translate_off
 	IF  first AND init_file /= ""  THEN
@@ -861,9 +860,9 @@ BEGIN
             	hread(l, buf);  -- read 16 bit addresses = 4 hex digits
                ram(loc) <= buf(data_width-1 DOWNTO 0);
                loc := loc + 1;
-               IF  loc >= (2**addr_width)  THEN  EXIT;  END IF;
+               IF  loc >= ram_size  THEN  EXIT;  END IF;
             END LOOP;
-            IF  loc >= (2**addr_width)  THEN  EXIT;  END IF;
+            IF  loc >= ram_size  THEN  EXIT;  END IF;
          END IF;
       END LOOP;
 		file_close(tcf);

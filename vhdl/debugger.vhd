@@ -2,10 +2,9 @@
 -- @file : debugger.vhd
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 01.04.2021 18:15:24
--- Last check in: $Rev: 683 $ $Date:: 2021-04-01 #$
+-- Last change: KS 02.04.2021 12:06:05
 -- @project: microCore
--- @language : VHDL-2008
+-- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
 -- @contributors :
 --

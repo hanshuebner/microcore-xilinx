@@ -2,7 +2,7 @@
 -- @file : uDatacache.vhd
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 05.04.2021 16:53:32
+-- Last change: KS 10.04.2021 16:58:59
 -- @project: microCore
 -- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
@@ -56,7 +56,7 @@ enable <= uBus.clk_en AND uBus.mem_en WHEN  uBus.ext_en = '0'  ELSE '0';
 make_sim_mem: IF  SIMULATION  GENERATE
 
    internal_data_mem: internal_dpram
-   GENERIC MAP (data_width, cache_addr_width, "rw_check", DMEM_file)
+   GENERIC MAP (data_width, cache_size, "rw_check", DMEM_file)
    PORT MAP (
       clk     => clk,
       ena     => enable,
@@ -74,7 +74,7 @@ make_sim_mem: IF  SIMULATION  GENERATE
 END GENERATE make_sim_mem; make_syn_mem: IF  NOT SIMULATION  GENERATE
 
    internal_data_mem: internal_dpram
-   GENERIC MAP (data_width, cache_addr_width, "rw_check")
+   GENERIC MAP (data_width, cache_size, "rw_check")
    PORT MAP (
       clk     => clk,
       ena     => enable,

@@ -2,10 +2,9 @@
 -- @file : architecture_pkg.vhd for the XP2-8E Demoboard
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 01.04.2021 19:33:01
--- Last check in: $Rev: 683 $ $Date:: 2021-04-01 #$
+-- Last change: KS 10.04.2021 19:44:29
 -- @project: microCore
--- @language : VHDL-2008
+-- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
 -- @contributors :
 --
@@ -35,7 +34,7 @@ USE work.functions_pkg.ALL;
 PACKAGE architecture_pkg IS
 --~--  \ when loaded by the microForth cross-compiler, code between "--~" up to "--~--" will be skipped.
 
-CONSTANT version            : NATURAL := 2320; -- <major_release><functionality_added><HW_fix><SW_fix>
+CONSTANT version            : NATURAL := 2320; -- <major_release><functionality_added><HW_fix><SW_fix><pre-release#>
 
 -- ---------------------------------------------------------------------
 -- Configuration flags
@@ -93,6 +92,7 @@ CONSTANT exp_width          : NATURAL :=  8; -- floating point exponent width
 
 CONSTANT data_addr_width    : NATURAL := 12; -- data memory address width, large enough for cache and external data memory
 CONSTANT cache_addr_width   : NATURAL := 12; -- data cache memory address width
+CONSTANT cache_size         : NATURAL := 16#C00#;
 CONSTANT reg_addr_width     : NATURAL :=  4; -- number of address bits reserved for internal registers at the top data space
 --~
 CONSTANT addr_extern        : NATURAL := 2 ** cache_addr_width; -- start address of external memory
@@ -110,6 +110,7 @@ CONSTANT ram_addr_width     : NATURAL := 12 + subbits; -- external memory, virtu
 
 CONSTANT inst_width         : NATURAL :=  8; -- instruction width - this is determined by design
 CONSTANT prog_addr_width    : NATURAL := 13; -- internal program memory address width
+CONSTANT prog_size          : NATURAL := 16#2000#;
 CONSTANT boot_addr_width    : NATURAL :=  6; -- size of the internal boot program memory !!! must match size of bootload.vhd !!!
 
 CONSTANT trap_width         : NATURAL :=  3; -- each vector has room for 2**trap_width instructions

@@ -2,10 +2,9 @@
 -- @file : uArithmetic.vhd
 -- ---------------------------------------------------------------------
 --
--- Last change: KS 30.03.2021 22:35:33
--- Last check in: $Rev: 673 $ $Date:: 2021-03-24 #$
+-- Last change: KS 02.04.2021 11:59:11
 -- @project: microCore
--- @language : VHDL-2008
+-- @language: VHDL-93
 -- @copyright (c): Klaus Schleisiek, All Rights Reserved.
 -- @contributors :
 --
