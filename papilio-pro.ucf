@@ -1,0 +1,7 @@
+## Prohibit the automatic placement of pins that are connected to VCC or GND for configuration.
+CONFIG PROHIBIT=P144;
+CONFIG PROHIBIT=P69;
+CONFIG PROHIBIT=P60;
+
+NET "clock" TNM_NET = clk;
+TIMESPEC TS_clk = PERIOD "clk" 31.25 ns HIGH 50%;
